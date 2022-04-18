@@ -1,6 +1,6 @@
 const swlog = (...msg) => console.log('[Service Worker]', ...msg);
 const appShellCacheName = 'appshell-v001';
-const dynamicCacheName = 'dynamic';
+const dynamicCacheName = 'dynamic-v001';
 
 async function setupAppShellCache() {
     const appShellCache = await caches.open(appShellCacheName);
