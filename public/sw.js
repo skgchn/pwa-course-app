@@ -33,9 +33,9 @@ async function setupAppShellCache() {
     ]);
 }
 
-self.addEventListener('install', function(event) {
-    //swlog('Installing Service Worker...', event);
-    event.waitUntil(setupAppShellCache());
+self.addEventListener('install', ({waitUntil}) => {
+    //swlog('Installing service worker');
+    waitUntil(setupAppShellCache());
     //self.skipWaiting();
 });
 
@@ -44,16 +44,16 @@ async function deleteStaleCaches() {
     return Promise.all(
         keyList.map(key => {
              if (key != appShellCacheName && key != dynamicCacheName) {
-                //swlog('Removing old cache...', key);
+                //swlog('Removing old cache', key);
                 return caches.delete(key);
              }
         })
     );
 }
 
-self.addEventListener('activate', function(event) {
-    //swlog('Activating Service Worker...', event);
-    event.waitUntil(deleteStaleCaches());
+self.addEventListener('activate', ({waitUntil}) => {
+    //swlog('Activating service worker');
+    waitUntil(deleteStaleCaches());
     return self.clients.claim();
 });
 
@@ -78,7 +78,7 @@ async function getResource(request) {
     }
 }
 
-self.addEventListener('fetch', function(event) {
-    //swlog('Fetching url ', event.request.url);
-    event.respondWith(getResource(event.request));
+self.addEventListener('fetch', ({request, respondWith}) => {
+    //swlog('Fetching url', request.url);
+    respondWith(getResource(request));
 });
