@@ -5,14 +5,14 @@ const dynamicCacheName = 'dynamic-v001';
 async function setupAppShellCache() {
     const appShellCache = await caches.open(appShellCacheName);
     //swlog('Pre-caching app shell static files');
-    return appShellCache.addAll(
-        [
+    return appShellCache.addAll([
         '/',
         '/index.html',
         'https://fonts.googleapis.com/css?family=Roboto:400,700',
         'https://fonts.googleapis.com/icon?family=Material+Icons',
         'https://cdnjs.cloudflare.com/ajax/libs/material-design-lite/1.3.0/material.indigo-pink.min.css',
         '/src/js/material.min.js',
+        '/src/js/material.min.js.map',
         '/src/js/promise.js',
         '/src/js/fetch.js',
         '/src/js/app.js',
@@ -33,27 +33,27 @@ async function setupAppShellCache() {
     ]);
 }
 
-self.addEventListener('install', ({waitUntil}) => {
+self.addEventListener('install', event => {
     //swlog('Installing service worker');
-    waitUntil(setupAppShellCache());
+    event.waitUntil(setupAppShellCache());
     //self.skipWaiting();
 });
 
 async function deleteStaleCaches() {
-    const keyList = await caches.keys();
+    const cacheNameList = await caches.keys();
     return Promise.all(
-        keyList.map(key => {
-             if (key != appShellCacheName && key != dynamicCacheName) {
-                //swlog('Removing old cache', key);
-                return caches.delete(key);
+        cacheNameList.map(cacheName => {
+             if (cacheName != appShellCacheName && cacheName != dynamicCacheName) {
+                //swlog('Removing old cache', cacheName);
+                return caches.delete(cacheName);
              }
         })
     );
 }
 
-self.addEventListener('activate', ({waitUntil}) => {
+self.addEventListener('activate', event => {
     //swlog('Activating service worker');
-    waitUntil(deleteStaleCaches());
+    event.waitUntil(deleteStaleCaches());
     return self.clients.claim();
 });
 
@@ -61,16 +61,16 @@ async function getResource(request) {
     try {
         const resFromCache = await caches.match(request);
         if (resFromCache) {
-            //swlog('found in cache: ', request.url);
+            //swlog('Found in cache', request.url);
             return resFromCache;
         }
 
+        //swlog('Fetching resource from net', request.url);
         const resFromNet = await fetch(request);
-        //swlog('after fetch', request.url);
-        dynamicCache = await caches.open(dynamicCacheName);
-        //swlog('after dynamic cache open', request.url);
+        //swlog('Opening dynamic cache to save the resource', request.url);
+        const dynamicCache = await caches.open(dynamicCacheName);
+        //swlog('Saving resouce in dynamic cache', request.url);
         dynamicCache.put(request.url, resFromNet.clone());
-        //swlog('after put in dynamic cache', request.url);
         return resFromNet;
     }
     catch (err) {
@@ -78,7 +78,7 @@ async function getResource(request) {
     }
 }
 
-self.addEventListener('fetch', ({request, respondWith}) => {
-    //swlog('Fetching url', request.url);
-    respondWith(getResource(request));
+self.addEventListener('fetch', event => {
+    //swlog('Fetching url', event.request.url);
+    event.respondWith(getResource(event.request));
 });
